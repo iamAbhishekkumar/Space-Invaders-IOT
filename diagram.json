@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "author": "Abhishek",
+  "editor": "wokwi",
+  "parts": [
+    {
+      "type": "wokwi-pi-pico",
+      "id": "pico",
+      "top": 0,
+      "left": 0,
+      "attrs": { "env": "micropython-20220117-v1.18" }
+    },
+    {
+      "type": "board-ssd1306",
+      "id": "oled1",
+      "top": 22.49,
+      "left": -176.99,
+      "attrs": {}
+    }
+  ],
+  "connections": [
+    ["oled1:GND", "pico:GND.8", "black", ["v-88.07", "h283.82", "v66"]],
+    ["oled1:VCC", "pico:VBUS", "red", ["v-71.4", "h261.04", "v2"]],
+    ["oled1:SCL", "pico:GP27", "green", ["v-56.73", "h285.58", "v102.67"]],
+    ["oled1:SDA", "pico:GP26", "green", ["v-46.07", "h300.42", "v28"]]
+  ]
+}
