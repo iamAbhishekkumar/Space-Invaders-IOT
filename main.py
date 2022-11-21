@@ -1,10 +1,13 @@
 # Constants.py
+from ssd1306 import SSD1306_I2C
+from machine import Pin, I2C, ADC
+import utime
+import framebuf
 OLED_RES_X = 128  # SSD1306 horizontal resolution
 OLED_RES_Y = 64   # SSD1306 vertical resolution
 
 
 # Player.py
-import framebuf
 
 
 class Player:
@@ -18,10 +21,13 @@ class Player:
         self.X = 0
         self.Y = 54
         self.oled = oled
+        self.bullets = []
 
     def render_player(self):
         # show the image at location (x=X,y=Y)
         self.oled.blit(self.__fb, self.X, self.Y)
+        for bul in self.bullets:
+            self.oled.blit(bul.__fb, bul.X, bul.Y)        
 
     def move_left(self):
         if self.X > 0:
@@ -40,27 +46,57 @@ class Player:
         if self.Y < OLED_RES_Y - self.height:
             self.Y += 1
 
+    def handle_bullets(self):
+        for bul in self.bullets:
+            bul.Y -= 1
+        
+    def fire(self):
+        self.bullets.append(Bullet(player, oled))
+
+class Bullet:
+    def __init__(self, player: Player, oled):
+        self.width = 1
+        self.height = 3
+        self.__img = bytearray(
+            b'\x80\x80\x80\x80\x80\x80')
+        self.__fb = framebuf.FrameBuffer(
+            self.__img, self.width, self.height, framebuf.MONO_HLSB)
+        self.X = player.X + player.width // 2
+        self.Y = player.Y - player.height // 2
+
+            
+def draw_win():
+    oled.fill(0)  # clear the OLED
+    player.render_player()
+    oled.show()
+    
+
 # frame buff types: GS2_HMSB, GS4_HMSB, GS8, MONO_HLSB, MONO_VLSB, MONO_HMSB, MVLSB, RGB565
-
-
+last_time = 0 # the last time we pressed the button
+button_presses = 0
 # Main.py
-from machine import Pin, I2C, ADC
-from ssd1306 import SSD1306_I2C
-
 if __name__ == '__main__':
+    
+    def button1_pressed(pin):
+        global button_presses, last_time
+        new_time = utime.ticks_ms()
+        # if it has been more that 1/5 of a second since the last event, we have a new event
+        if (new_time - last_time) > 200: 
+            button_presses +=1
+            last_time = new_time
+        
     # start I2C on I2C1 (GPIO 26/27)
     i2c = I2C(0, scl=Pin(1), sda=Pin(0), freq=400000)
     oled = SSD1306_I2C(OLED_RES_X, OLED_RES_Y, i2c)  # oled controller
 
     xAxis = ADC(Pin(27))
     yAxis = ADC(Pin(26))
-    button = Pin(16, Pin.IN, Pin.PULL_UP)
-
+    button = Pin(15, Pin.IN, Pin.PULL_UP)
+    button.irq(handler=button1_pressed, trigger=Pin.IRQ_RISING)
+    
     player = Player(oled)
-    x = 0
+    old_presses = 0   
     while True:
-        oled.fill(0)  # clear the OLED
-        player.render_player()
         xValue = xAxis.read_u16()
         yValue = yAxis.read_u16()
         buttonValue = button.value()
@@ -76,9 +112,9 @@ if __name__ == '__main__':
             # "up"
         elif yValue >= 60000:
             player.move_down()
-            # "down"
-        if buttonValue == 0:
-            buttonStatus = "pressed"
-        oled.show()
-
-
+            # "down"          
+        if button_presses != old_presses:
+            old_presses = button_presses
+            player.fire()
+        player.handle_bullets()
+        draw_win()
