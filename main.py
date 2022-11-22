@@ -3,9 +3,10 @@ from ssd1306 import SSD1306_I2C
 from machine import Pin, I2C, ADC
 import utime
 import framebuf
+import random
 OLED_RES_X = 128  # SSD1306 horizontal resolution
 OLED_RES_Y = 64   # SSD1306 vertical resolution
-
+ENEMY_MOVEMENT_THRESHOLD = 8
 
 # Player.py
 
@@ -70,9 +71,30 @@ class Bullet:
         self.Y = player.Y - player.height // 2
 
 
+class Enemy:
+    def __init__(self, oled) -> None:
+        self.width = 11
+        self.height = 8
+        self.__img = bytearray(
+            b' \x80\x1f\x00?\x80n\xc0\xff\xe0\xbf\xa0\xa0\xa0\x1b\x00')
+        self.__fb = framebuf.FrameBuffer(
+            self.__img, self.width, self.height, framebuf.MONO_HLSB)
+        self.X = random.randint(0 + self.width, OLED_RES_X - self.width)
+        self.Y = 0
+        self.oled = oled
+
+    def render_enemy(self):
+        self.oled.blit(self.__fb, self.X, self.Y)
+
+    def move(self):
+        self.Y += 1
+
+
 def draw_win():
     oled.fill(0)  # clear the OLED
     player.render_player()
+    for enemy in enemies:
+        enemy.render_enemy()
     oled.show()
 
 
@@ -101,6 +123,8 @@ if __name__ == '__main__':
 
     player = Player(oled)
     old_presses = 0
+    enemies = [Enemy(oled)]
+    move_enemy = 0
     while True:
         xValue = xAxis.read_u16()
         yValue = yAxis.read_u16()
@@ -121,6 +145,12 @@ if __name__ == '__main__':
         if button_presses != old_presses:
             old_presses = button_presses
             player.fire()
+
         player.handle_bullets()
-        print(len(player.bullets))
+        move_enemy += 1
+        if move_enemy > ENEMY_MOVEMENT_THRESHOLD:
+            move_enemy = 0
+            for enemy in enemies:
+                enemy.move()
+
         draw_win()
