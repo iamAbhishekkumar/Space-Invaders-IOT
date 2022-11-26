@@ -6,7 +6,7 @@ import framebuf
 import random
 OLED_RES_X = 128  # SSD1306 horizontal resolution
 OLED_RES_Y = 64   # SSD1306 vertical resolution
-ENEMY_MOVEMENT_THRESHOLD = 8
+ENEMY_MOVEMENT_THRESHOLD = 20
 
 # Player.py
 
@@ -23,12 +23,15 @@ class Player:
         self.Y = 54
         self.oled = oled
         self.bullets = []
+        self.enemies = []
 
     def render_player(self):
         # show the image at location (x=X,y=Y)
         self.oled.blit(self.__fb, self.X, self.Y)
         for bul in self.bullets:
             self.oled.blit(bul.__fb, bul.X, bul.Y)
+        for enem in self.enemies:
+            enem.render_enemy()
 
     def move_left(self):
         if self.X > 0:
@@ -53,7 +56,10 @@ class Player:
 
             if bul.Y < 0:
                 self.bullets.remove(bul)
-        # collison
+            for enem in self.enemies:
+                if isCollide(bullet=bul, enemy=enem):
+                    self.bullets.remove(bul)
+                    self.enemies.remove(enem)
 
     def fire(self):
         self.bullets.append(Bullet(player, oled))
@@ -93,14 +99,17 @@ class Enemy:
 def draw_win():
     oled.fill(0)  # clear the OLED
     player.render_player()
-    for enemy in enemies:
-        enemy.render_enemy()
     oled.show()
 
 
-# frame buff types: GS2_HMSB, GS4_HMSB, GS8, MONO_HLSB, MONO_VLSB, MONO_HMSB, MVLSB, RGB565
+def isCollide(enemy: Enemy, bullet: Bullet):
+    return (enemy.Y + enemy.height // 2) >= bullet.Y + (bullet.height // 2) and enemy.X - enemy.width // 2 <= bullet.X <= enemy.X + enemy.width
+
+    # frame buff types: GS2_HMSB, GS4_HMSB, GS8, MONO_HLSB, MONO_VLSB, MONO_HMSB, MVLSB, RGB565
 last_time = 0  # the last time we pressed the button
 button_presses = 0
+
+
 # Main.py
 if __name__ == '__main__':
 
@@ -123,8 +132,9 @@ if __name__ == '__main__':
 
     player = Player(oled)
     old_presses = 0
-    enemies = [Enemy(oled)]
     move_enemy = 0
+
+    player.enemies = [Enemy(oled), Enemy(oled)]
     while True:
         xValue = xAxis.read_u16()
         yValue = yAxis.read_u16()
@@ -146,11 +156,11 @@ if __name__ == '__main__':
             old_presses = button_presses
             player.fire()
 
-        player.handle_bullets()
         move_enemy += 1
         if move_enemy > ENEMY_MOVEMENT_THRESHOLD:
             move_enemy = 0
-            for enemy in enemies:
+            for enemy in player.enemies:
                 enemy.move()
 
         draw_win()
+        player.handle_bullets()
