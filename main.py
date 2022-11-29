@@ -24,6 +24,7 @@ class Player:
         self.oled = oled
         self.bullets = []
         self.enemies = []
+        self.position = [p * 11 for p in range(11)]  # 11 is width of enemy
 
     def render_player(self):
         # show the image at location (x=X,y=Y)
@@ -60,6 +61,7 @@ class Player:
                 if isCollide(bullet=bul, enemy=enem):
                     self.bullets.remove(bul)
                     self.enemies.remove(enem)
+                    self.position[enem.X // 11] = enem.X
 
     def fire(self):
         self.bullets.append(Bullet(player, oled))
@@ -78,14 +80,15 @@ class Bullet:
 
 
 class Enemy:
-    def __init__(self, oled) -> None:
+    # Solving Overlapping Enemy Problem
+    def __init__(self, oled, X) -> None:
         self.width = 11
         self.height = 8
         self.__img = bytearray(
             b' \x80\x1f\x00?\x80n\xc0\xff\xe0\xbf\xa0\xa0\xa0\x1b\x00')
         self.__fb = framebuf.FrameBuffer(
             self.__img, self.width, self.height, framebuf.MONO_HLSB)
-        self.X = random.randint(0 + self.width, OLED_RES_X - self.width)
+        self.X = X
         self.Y = 0
         self.oled = oled
 
@@ -102,13 +105,21 @@ def draw_win():
     oled.show()
 
 
+def spawn_enemy(player: Player):
+    _pos = [a for a in player.position if a != -1]
+    if _pos:  # if threashold reached
+        X = random.choice(_pos)
+        player.position[X // 11] = -1
+        player.enemies.append(Enemy(player.oled, X))
+
+
 def isCollide(enemy: Enemy, bullet: Bullet):
     return (enemy.Y + enemy.height // 2) >= bullet.Y + (bullet.height // 2) and enemy.X - enemy.width // 2 <= bullet.X <= enemy.X + enemy.width
 
     # frame buff types: GS2_HMSB, GS4_HMSB, GS8, MONO_HLSB, MONO_VLSB, MONO_HMSB, MVLSB, RGB565
 last_time = 0  # the last time we pressed the button
 button_presses = 0
-
+is_time_to_spawn = 0
 
 # Main.py
 if __name__ == '__main__':
@@ -134,7 +145,6 @@ if __name__ == '__main__':
     old_presses = 0
     move_enemy = 0
 
-    player.enemies = [Enemy(oled), Enemy(oled)]
     while True:
         xValue = xAxis.read_u16()
         yValue = yAxis.read_u16()
@@ -157,10 +167,16 @@ if __name__ == '__main__':
             player.fire()
 
         move_enemy += 1
+        is_time_to_spawn += 1
         if move_enemy > ENEMY_MOVEMENT_THRESHOLD:
             move_enemy = 0
             for enemy in player.enemies:
                 enemy.move()
 
         draw_win()
+
+        if is_time_to_spawn > 30:
+            is_time_to_spawn = 0
+            spawn_enemy(player)
+
         player.handle_bullets()
