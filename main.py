@@ -60,7 +60,7 @@ def play(player, old_presses, move_enemy):
             is_time_to_spawn = 0
             player.spawn_enemy()
         player.handle_bullets()
-        if player.health:
+        if not player.health:
             run = False
             menu = True
             blink_counter = 0
@@ -79,7 +79,7 @@ def play(player, old_presses, move_enemy):
                     old_presses = button_presses
                     menu = False
                     run = True
-                    play(Player(OLED), 0, 0)
+                    player = Player(OLED)
 
 
 # frame buff types: GS2_HMSB, GS4_HMSB, GS8, MONO_HLSB, MONO_VLSB, MONO_HMSB, MVLSB, RGB565
