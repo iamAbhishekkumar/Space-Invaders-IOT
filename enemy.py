@@ -11,7 +11,7 @@ class Enemy:
         self.__fb = framebuf.FrameBuffer(
             self.__img, self.width, self.height, framebuf.MONO_HLSB)
         self.X = X
-        self.Y = 0
+        self.Y = 10
         self.oled = oled
 
     def render_enemy(self):

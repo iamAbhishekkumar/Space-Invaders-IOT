@@ -5,14 +5,26 @@ from enemy import Enemy
 import framebuf
 
 
+class Heart:
+    def __init__(self, X, Y) -> None:
+        self.width = 8
+        self.height = 8
+        self.img = bytearray(b'B\xe7\xff\xff\xff~<\x18')
+        self.fb = framebuf.FrameBuffer(
+            self.img, self.width, self.height, framebuf.MONO_HLSB
+        )
+        self.X = X
+        self.Y = Y
+
+
 class Player:
     def __init__(self, oled):
         self.width = 9
         self.height = 10
-        self.__img = bytearray(
+        self.img = bytearray(
             b'\x08\x00\x1c\x00\x14\x00\x14\x00\x1c\x00>\x00\x7f\x00\xff\x80\xdd\x80\x08\x00')
-        self.__fb = framebuf.FrameBuffer(
-            self.__img, self.width, self.height, framebuf.MONO_HLSB)  # MONO_HLSB
+        self.fb = framebuf.FrameBuffer(
+            self.img, self.width, self.height, framebuf.MONO_HLSB)  # MONO_HLSB
         self.X = 0
         self.Y = 54
         self.oled = oled
@@ -20,13 +32,13 @@ class Player:
         self.enemies = []
         self.position = [p * 11 for p in range(11)]  # 11 is width of enemy
         self.score = 0
-        self.health = 5
+        self.health = [Heart(i, 0) for i in range(120, 70, -10)]
 
     def render_player(self):
         # show the image at location (x=X,y=Y)
-        self.oled.blit(self.__fb, self.X, self.Y)
+        self.oled.blit(self.fb, self.X, self.Y)
         for bul in self.bullets:
-            self.oled.blit(bul.__fb, bul.X, bul.Y)
+            self.oled.blit(bul.fb, bul.X, bul.Y)
         for enem in self.enemies:
             enem.render_enemy()
 
@@ -34,13 +46,16 @@ class Player:
             if enem.Y >= OLED_RES_Y - enem.height:
                 self.enemies.remove(enem)
                 self.position[enem.X // 11] = enem.X
-                self.score -= 1
+                self.health -= 1
 
             if self.is_player_got_hit(enem):
-                self.health -= 1
+                self.health.pop()
                 self.enemies.remove(enem)
                 self.position[enem.X // 11] = enem.X
-                print("Collided")
+
+        self.oled.text(str(self.score), 0, 0)
+        for heart in self.health:
+            self.oled.blit(heart.fb, heart.X, heart.Y)
 
     def move_left(self):
         if self.X > 0:
@@ -90,9 +105,9 @@ class Bullet:
     def __init__(self, player: Player, oled):
         self.width = 1
         self.height = 3
-        self.__img = bytearray(
+        self.img = bytearray(
             b'\x80\x80\x80\x80\x80\x80')
-        self.__fb = framebuf.FrameBuffer(
-            self.__img, self.width, self.height, framebuf.MONO_HLSB)
+        self.fb = framebuf.FrameBuffer(
+            self.img, self.width, self.height, framebuf.MONO_HLSB)
         self.X = player.X + player.width // 2
         self.Y = player.Y - player.height // 2

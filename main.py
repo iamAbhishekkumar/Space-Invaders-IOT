@@ -1,12 +1,11 @@
-from configs import *
-from player import Player
-from time import sleep
-
-
 try:
     from ssd1306 import SSD1306_I2C
     from machine import Pin, I2C, ADC
     import utime
+    from configs import *
+    from player import Player
+    from time import sleep
+    # from pico_i2c_lcd import I2cLcd
 except ImportError:
     print("Something is wrong while importing libs")
 
@@ -61,7 +60,7 @@ def play(player, old_presses, move_enemy):
             is_time_to_spawn = 0
             player.spawn_enemy()
         player.handle_bullets()
-        if player.health == 0:
+        if player.health:
             run = False
             menu = True
             blink_counter = 0
@@ -80,8 +79,7 @@ def play(player, old_presses, move_enemy):
                     old_presses = button_presses
                     menu = False
                     run = True
-                    player = Player(OLED)
-                    play(player, 0, 0)
+                    play(Player(OLED), 0, 0)
 
 
 # frame buff types: GS2_HMSB, GS4_HMSB, GS8, MONO_HLSB, MONO_VLSB, MONO_HMSB, MVLSB, RGB565
