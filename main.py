@@ -5,7 +5,7 @@ try:
     from configs import *
     from player import Player
     from time import sleep
-    # from pico_i2c_lcd import I2cLcd
+    from sound import play_fire
 except ImportError:
     print("Something is wrong while importing libs")
 
@@ -20,7 +20,7 @@ def button1_pressed(pin):
 
 
 def play(player, old_presses, move_enemy):
-    global is_time_to_spawn, run, menu
+    global is_time_to_spawn, run, menu, ENEMY_MOVEMENT_THRESHOLD
 
     while run:
         xValue = X_AXIS.read_u16()
@@ -40,6 +40,7 @@ def play(player, old_presses, move_enemy):
         if button_presses != old_presses:
             old_presses = button_presses
             player.fire()
+            play_fire()
             if menu:
                 menu = False
                 player = Player(OLED)
@@ -60,6 +61,10 @@ def play(player, old_presses, move_enemy):
             is_time_to_spawn = 0
             player.spawn_enemy()
         player.handle_bullets()
+
+        if player.score != 0 and player.score % 20 == 0:
+            ENEMY_MOVEMENT_THRESHOLD -= 0.2
+
         if not player.health:
             run = False
             menu = True
@@ -80,10 +85,10 @@ def play(player, old_presses, move_enemy):
                     menu = False
                     run = True
                     player = Player(OLED)
+                    ENEMY_MOVEMENT_THRESHOLD = 10
 
 
 # frame buff types: GS2_HMSB, GS4_HMSB, GS8, MONO_HLSB, MONO_VLSB, MONO_HMSB, MVLSB, RGB565
-
 # Main.py
 if __name__ == '__main__':
 
@@ -105,5 +110,23 @@ if __name__ == '__main__':
     player = Player(OLED)
     old_presses = 0
     move_enemy = 0
-
+    blink_counter = 0
+    while True:
+        OLED.fill(0)
+        OLED.text("Space Invaders", 9, 15)
+        OLED.text("Start Game", 20, 30)
+        blink_counter += 1
+        if blink_counter > 30:
+            OLED.text("---Press Fire---", 0, 50)
+            blink_counter = 0
+            OLED.show()
+            sleep(1)
+        OLED.show()
+        if button_presses != old_presses:
+            old_presses = button_presses
+            menu = False
+            run = True
+            player = Player(OLED)
+            ENEMY_MOVEMENT_THRESHOLD = 10
+            break
     play(player, old_presses, move_enemy)

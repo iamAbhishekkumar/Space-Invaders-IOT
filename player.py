@@ -3,6 +3,7 @@ import random
 from configs import *
 from enemy import Enemy
 import framebuf
+from sound import play_lose
 
 
 class Heart:
@@ -44,14 +45,16 @@ class Player:
 
         for enem in self.enemies:
             if enem.Y >= OLED_RES_Y - enem.height:
-                self.enemies.remove(enem)
                 self.position[enem.X // 11] = enem.X
-                self.health -= 1
+                self.enemies.remove(enem)
+                self.health.pop()
+                play_lose()
 
-            if self.is_player_got_hit(enem):
+            elif self.is_player_got_hit(enem):
                 self.health.pop()
                 self.enemies.remove(enem)
                 self.position[enem.X // 11] = enem.X
+                play_lose()
 
         self.oled.text(str(self.score), 0, 0)
         for heart in self.health:
@@ -59,24 +62,24 @@ class Player:
 
     def move_left(self):
         if self.X > 0:
-            self.X -= 1
+            self.X -= 2
 
     def move_right(self):
         if self.X < OLED_RES_X - self.width:
-            self.X += 1
+            self.X += 2
 
     def move_up(self):
         half_screen = OLED_RES_Y // 2 - self.height
         if self.Y > half_screen:
-            self.Y -= 1
+            self.Y -= 2
 
     def move_down(self):
         if self.Y < OLED_RES_Y - self.height:
-            self.Y += 1
+            self.Y += 2
 
     def handle_bullets(self):
         for bul in self.bullets:
-            bul.Y -= 1
+            bul.Y -= 2
 
             if bul.Y < 0:
                 self.bullets.remove(bul)
