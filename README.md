@@ -29,6 +29,8 @@ This is project to prove that we can also make a simple game using Rasberry Pi P
 ## How to Setup? :thinking:
 
 After making all the necessary connections, save all below files into your Raspberry Pi Pico.
+
+```
 .
 ├── configs.py
 ├── enemy.py
@@ -36,5 +38,6 @@ After making all the necessary connections, save all below files into your Raspb
 ├── player.py
 ├── sound.py
 └── ssd1306.py
+```
 
 And just run main.py, to start the game. :smile:
